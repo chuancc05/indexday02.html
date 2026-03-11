@@ -1,0 +1,847 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Day 2 · Prompt Engineering 实战</title>
+<style>
+  @import url('https://fonts.googleapis.com/css2?family=Noto+Serif+SC:wght@400;600;700&family=JetBrains+Mono:wght@400;600&family=Inter:wght@300;400;500;600&display=swap');
+
+  :root {
+    --ink: #1a1a2e;
+    --paper: #f5f0e8;
+    --accent: #c0392b;
+    --gold: #d4a017;
+    --muted: #7a7264;
+    --border: #d9d2c5;
+    --card: #fffdf9;
+    --code-bg: #1a1a2e;
+    --green: #27ae60;
+    --blue: #2980b9;
+    --purple: #8e44ad;
+  }
+
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+
+  body {
+    font-family: 'Inter', sans-serif;
+    background: var(--paper);
+    color: var(--ink);
+    min-height: 100vh;
+    background-image: 
+      radial-gradient(circle at 20% 20%, rgba(192,57,43,0.05) 0%, transparent 50%),
+      radial-gradient(circle at 80% 80%, rgba(212,160,23,0.05) 0%, transparent 50%);
+  }
+
+  header {
+    background: var(--ink);
+    color: var(--paper);
+    padding: 2rem 2.5rem;
+    border-bottom: 4px solid var(--accent);
+    position: relative;
+    overflow: hidden;
+  }
+  header::before {
+    content: 'PROMPT ENGINEERING';
+    position: absolute;
+    right: -20px;
+    top: 50%;
+    transform: translateY(-50%) rotate(-8deg);
+    font-size: 5rem;
+    font-weight: 700;
+    opacity: 0.04;
+    font-family: 'Noto Serif SC';
+    white-space: nowrap;
+    color: white;
+  }
+
+  .header-tag {
+    display: inline-block;
+    background: var(--accent);
+    color: white;
+    font-size: 0.7rem;
+    font-weight: 600;
+    letter-spacing: 0.15em;
+    padding: 0.25rem 0.75rem;
+    text-transform: uppercase;
+    margin-bottom: 0.75rem;
+  }
+
+  header h1 {
+    font-family: 'Noto Serif SC', serif;
+    font-size: 2rem;
+    font-weight: 700;
+    letter-spacing: -0.01em;
+    margin-bottom: 0.25rem;
+  }
+
+  header p {
+    color: rgba(245,240,232,0.6);
+    font-size: 0.9rem;
+  }
+
+  .container {
+    max-width: 960px;
+    margin: 0 auto;
+    padding: 2rem 1.5rem;
+  }
+
+  /* THEORY SECTION */
+  .section-title {
+    font-family: 'Noto Serif SC', serif;
+    font-size: 1.3rem;
+    font-weight: 700;
+    color: var(--ink);
+    margin-bottom: 1.25rem;
+    padding-bottom: 0.5rem;
+    border-bottom: 2px solid var(--border);
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+  }
+
+  .section-title .num {
+    background: var(--accent);
+    color: white;
+    width: 28px;
+    height: 28px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 0.85rem;
+    font-weight: 700;
+    flex-shrink: 0;
+  }
+
+  .concepts-grid {
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    gap: 1rem;
+    margin-bottom: 2.5rem;
+  }
+
+  .concept-card {
+    background: var(--card);
+    border: 1px solid var(--border);
+    border-top: 3px solid;
+    padding: 1.25rem;
+    cursor: pointer;
+    transition: transform 0.15s, box-shadow 0.15s;
+    position: relative;
+  }
+  .concept-card:nth-child(1) { border-top-color: var(--accent); }
+  .concept-card:nth-child(2) { border-top-color: var(--blue); }
+  .concept-card:nth-child(3) { border-top-color: var(--purple); }
+
+  .concept-card:hover { transform: translateY(-2px); box-shadow: 0 6px 20px rgba(0,0,0,0.1); }
+
+  .concept-icon { font-size: 1.75rem; margin-bottom: 0.5rem; }
+  .concept-name {
+    font-family: 'Noto Serif SC', serif;
+    font-size: 1rem;
+    font-weight: 700;
+    margin-bottom: 0.4rem;
+  }
+  .concept-en {
+    font-size: 0.7rem;
+    font-weight: 600;
+    letter-spacing: 0.1em;
+    text-transform: uppercase;
+    color: var(--muted);
+    margin-bottom: 0.75rem;
+  }
+  .concept-desc {
+    font-size: 0.82rem;
+    line-height: 1.6;
+    color: #444;
+  }
+
+  .concept-expand {
+    margin-top: 0.75rem;
+    padding-top: 0.75rem;
+    border-top: 1px solid var(--border);
+    font-size: 0.8rem;
+    line-height: 1.7;
+    color: #333;
+    display: none;
+  }
+  .concept-card.open .concept-expand { display: block; }
+
+  .concept-example {
+    background: var(--code-bg);
+    color: #a8d8a8;
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 0.72rem;
+    padding: 0.75rem;
+    margin-top: 0.6rem;
+    line-height: 1.6;
+    border-radius: 2px;
+  }
+
+  .toggle-hint {
+    font-size: 0.72rem;
+    color: var(--muted);
+    margin-top: 0.5rem;
+    text-align: right;
+  }
+
+  /* PRACTICE SECTION */
+  .practice-area {
+    background: var(--card);
+    border: 1px solid var(--border);
+    padding: 1.75rem;
+    margin-bottom: 1rem;
+  }
+
+  .topic-selector {
+    display: flex;
+    align-items: center;
+    gap: 0.75rem;
+    margin-bottom: 1.5rem;
+    flex-wrap: wrap;
+  }
+
+  .topic-selector label {
+    font-size: 0.85rem;
+    font-weight: 600;
+    color: var(--muted);
+    white-space: nowrap;
+  }
+
+  .topic-btn {
+    padding: 0.4rem 0.9rem;
+    border: 1px solid var(--border);
+    background: transparent;
+    font-size: 0.82rem;
+    cursor: pointer;
+    transition: all 0.15s;
+    font-family: 'Inter', sans-serif;
+    color: var(--ink);
+  }
+  .topic-btn.active {
+    background: var(--ink);
+    color: var(--paper);
+    border-color: var(--ink);
+  }
+  .topic-btn:hover:not(.active) { border-color: var(--ink); }
+
+  .prompt-tabs {
+    display: flex;
+    border-bottom: 2px solid var(--border);
+    margin-bottom: 1.25rem;
+    gap: 0;
+  }
+
+  .tab-btn {
+    padding: 0.6rem 1.2rem;
+    border: none;
+    background: transparent;
+    font-size: 0.85rem;
+    font-weight: 500;
+    cursor: pointer;
+    color: var(--muted);
+    border-bottom: 2px solid transparent;
+    margin-bottom: -2px;
+    transition: all 0.15s;
+    font-family: 'Inter', sans-serif;
+    display: flex;
+    align-items: center;
+    gap: 0.4rem;
+  }
+  .tab-btn.active {
+    color: var(--ink);
+    border-bottom-color: var(--accent);
+    font-weight: 600;
+  }
+  .tab-btn:hover:not(.active) { color: var(--ink); }
+
+  .tab-dot {
+    width: 8px;
+    height: 8px;
+    border-radius: 50%;
+  }
+  .tab-btn:nth-child(1) .tab-dot { background: var(--accent); }
+  .tab-btn:nth-child(2) .tab-dot { background: var(--blue); }
+  .tab-btn:nth-child(3) .tab-dot { background: var(--purple); }
+
+  .tab-content { display: none; }
+  .tab-content.active { display: block; }
+
+  .prompt-label {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    margin-bottom: 0.5rem;
+  }
+  .prompt-label span {
+    font-size: 0.75rem;
+    font-weight: 600;
+    letter-spacing: 0.1em;
+    text-transform: uppercase;
+    color: var(--muted);
+  }
+
+  .copy-btn {
+    font-size: 0.72rem;
+    padding: 0.25rem 0.6rem;
+    border: 1px solid var(--border);
+    background: transparent;
+    cursor: pointer;
+    font-family: 'Inter', sans-serif;
+    color: var(--muted);
+    transition: all 0.15s;
+  }
+  .copy-btn:hover { background: var(--ink); color: white; border-color: var(--ink); }
+
+  .prompt-box {
+    background: var(--code-bg);
+    color: #e8e0d0;
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 0.8rem;
+    padding: 1.25rem;
+    line-height: 1.8;
+    white-space: pre-wrap;
+    border-radius: 2px;
+    min-height: 100px;
+    position: relative;
+  }
+
+  .highlight-role { color: #f39c12; }
+  .highlight-example { color: #2ecc71; }
+  .highlight-chain { color: #9b59b6; }
+  .highlight-question { color: #3498db; }
+
+  .tip-box {
+    margin-top: 1rem;
+    padding: 0.75rem 1rem;
+    border-left: 3px solid;
+    font-size: 0.82rem;
+    line-height: 1.6;
+    color: #444;
+  }
+  .tab-content:nth-child(1) .tip-box { border-color: var(--accent); background: rgba(192,57,43,0.05); }
+  .tab-content:nth-child(2) .tip-box { border-color: var(--blue); background: rgba(41,128,185,0.05); }
+  .tab-content:nth-child(3) .tip-box { border-color: var(--purple); background: rgba(142,68,173,0.05); }
+
+  /* COMPARISON TABLE */
+  .compare-table {
+    width: 100%;
+    border-collapse: collapse;
+    font-size: 0.83rem;
+    background: var(--card);
+    border: 1px solid var(--border);
+  }
+
+  .compare-table th {
+    background: var(--ink);
+    color: var(--paper);
+    padding: 0.75rem 1rem;
+    text-align: left;
+    font-weight: 600;
+    font-size: 0.8rem;
+  }
+
+  .compare-table td {
+    padding: 0.8rem 1rem;
+    border-bottom: 1px solid var(--border);
+    vertical-align: top;
+    line-height: 1.6;
+  }
+
+  .compare-table tr:last-child td { border-bottom: none; }
+  .compare-table tr:nth-child(even) td { background: rgba(0,0,0,0.02); }
+
+  .badge {
+    display: inline-block;
+    padding: 0.15rem 0.5rem;
+    font-size: 0.7rem;
+    font-weight: 600;
+    border-radius: 2px;
+    letter-spacing: 0.05em;
+  }
+  .badge-red { background: rgba(192,57,43,0.15); color: var(--accent); }
+  .badge-blue { background: rgba(41,128,185,0.15); color: var(--blue); }
+  .badge-purple { background: rgba(142,68,173,0.15); color: var(--purple); }
+
+  .star-rating { color: var(--gold); font-size: 0.85rem; }
+
+  /* CHECKLIST */
+  .checklist {
+    background: var(--card);
+    border: 1px solid var(--border);
+    padding: 1.5rem;
+    margin-bottom: 2rem;
+  }
+
+  .check-item {
+    display: flex;
+    align-items: flex-start;
+    gap: 0.75rem;
+    padding: 0.6rem 0;
+    border-bottom: 1px solid var(--border);
+    cursor: pointer;
+  }
+  .check-item:last-child { border-bottom: none; padding-bottom: 0; }
+
+  .check-box {
+    width: 20px;
+    height: 20px;
+    border: 2px solid var(--border);
+    flex-shrink: 0;
+    margin-top: 1px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    transition: all 0.15s;
+  }
+  .check-item.done .check-box {
+    background: var(--green);
+    border-color: var(--green);
+    color: white;
+    font-size: 0.75rem;
+  }
+  .check-text { font-size: 0.85rem; line-height: 1.5; }
+  .check-item.done .check-text { text-decoration: line-through; color: var(--muted); }
+
+  .mb-2 { margin-bottom: 2rem; }
+  .mb-1 { margin-bottom: 1rem; }
+
+  .callout {
+    background: linear-gradient(135deg, rgba(192,57,43,0.08), rgba(212,160,23,0.08));
+    border: 1px solid rgba(212,160,23,0.3);
+    padding: 1.25rem 1.5rem;
+    margin-bottom: 2rem;
+    font-size: 0.85rem;
+    line-height: 1.7;
+  }
+  .callout strong { color: var(--accent); }
+
+  @media (max-width: 700px) {
+    .concepts-grid { grid-template-columns: 1fr; }
+    .prompt-tabs { flex-wrap: wrap; }
+    header h1 { font-size: 1.5rem; }
+  }
+</style>
+</head>
+<body>
+
+<header>
+  <div class="header-tag">Day 2 · AI学习计划</div>
+  <h1>Prompt Engineering 实战手册</h1>
+  <p>学完即用 · 三种写法对比 · 亲手感受差距</p>
+</header>
+
+<div class="container">
+
+  <!-- CALLOUT -->
+  <div class="callout">
+    <strong>📌 今天的目标：</strong> 用<strong>同一个问题</strong>，写出三种质量不同的Prompt，亲眼看到AI回答质量的差距。核心不是背概念，而是<strong>动手感受</strong>。
+  </div>
+
+  <!-- SECTION 1: THEORY -->
+  <div class="section-title">
+    <span class="num">1</span>
+    核心概念（点击展开详解）
+  </div>
+
+  <div class="concepts-grid mb-2">
+    <!-- Card 1 -->
+    <div class="concept-card" onclick="this.classList.toggle('open')">
+      <div class="concept-icon">🎭</div>
+      <div class="concept-name">角色提示</div>
+      <div class="concept-en">Role Prompting</div>
+      <div class="concept-desc">给AI分配一个专家身份，让它从专业角度回答。</div>
+      <div class="concept-expand">
+        <strong>核心原理：</strong>AI会根据角色调整回答的深度、术语、视角。一个"5岁孩子"和"资深工程师"对同一问题的回答完全不同。
+        <div class="concept-example">❌ 普通：解释一下机器学习
+✅ 角色：你是一位有10年经验的
+   ML工程师，请向一个有编程
+   基础但没有ML经验的人解释
+   机器学习的核心概念</div>
+        <strong>关键：</strong>角色越具体，回答越精准。加上"受众是谁"效果翻倍。
+      </div>
+      <div class="toggle-hint">点击展开 ▾</div>
+    </div>
+
+    <!-- Card 2 -->
+    <div class="concept-card" onclick="this.classList.toggle('open')">
+      <div class="concept-icon">📚</div>
+      <div class="concept-name">Few-shot 提示</div>
+      <div class="concept-en">Few-shot Prompting</div>
+      <div class="concept-desc">给AI看几个示例，让它学会你想要的输出格式和风格。</div>
+      <div class="concept-expand">
+        <strong>核心原理：</strong>与其描述你想要什么，不如直接给例子。AI是个超强的模式匹配器，例子比描述更有效。
+        <div class="concept-example">示例格式：
+输入：今天天气真好
+情感：积极 😊
+
+输入：又堵车了
+情感：消极 😤
+
+输入：[你的问题]
+情感：？</div>
+        <strong>关键：</strong>3个例子通常够用，例子要覆盖不同情况。
+      </div>
+      <div class="toggle-hint">点击展开 ▾</div>
+    </div>
+
+    <!-- Card 3 -->
+    <div class="concept-card" onclick="this.classList.toggle('open')">
+      <div class="concept-icon">🧠</div>
+      <div class="concept-name">思维链</div>
+      <div class="concept-en">Chain of Thought (CoT)</div>
+      <div class="concept-desc">让AI一步步展示推理过程，而不是直接给答案。</div>
+      <div class="concept-expand">
+        <strong>核心原理：</strong>AI在推理复杂问题时，如果被迫"展示过程"，错误率会大幅降低。就像数学考试要写步骤一样。
+        <div class="concept-example">❌ 直接答：这个商业计划可行吗？
+✅ 思维链：请分析这个商业计划
+   的可行性，按以下步骤思考：
+   1. 市场规模分析
+   2. 竞争格局
+   3. 核心风险
+   4. 最终结论</div>
+        <strong>关键：</strong>"让我们一步步思考" / "请先分析...再得出结论" 是触发思维链的魔法词。
+      </div>
+      <div class="toggle-hint">点击展开 ▾</div>
+    </div>
+  </div>
+
+  <!-- SECTION 2: PRACTICE -->
+  <div class="section-title">
+    <span class="num">2</span>
+    实战：三种Prompt对比
+  </div>
+
+  <div class="practice-area mb-2">
+    <div class="topic-selector">
+      <label>选择练习话题：</label>
+      <button class="topic-btn active" onclick="setTopic('invest')">💰 如何开始投资</button>
+      <button class="topic-btn" onclick="setTopic('learn')">📖 如何高效学习</button>
+      <button class="topic-btn" onclick="setTopic('career')">🚀 如何选择职业方向</button>
+    </div>
+
+    <div class="prompt-tabs">
+      <button class="tab-btn active" onclick="setTab(0)">
+        <span class="tab-dot"></span> 普通版
+      </button>
+      <button class="tab-btn" onclick="setTab(1)">
+        <span class="tab-dot"></span> 专家版（角色+Few-shot）
+      </button>
+      <button class="tab-btn" onclick="setTab(2)">
+        <span class="tab-dot"></span> 思维链版
+      </button>
+    </div>
+
+    <!-- Tab 1: Basic -->
+    <div class="tab-content active" id="tab-0">
+      <div class="prompt-label">
+        <span>普通 Prompt</span>
+        <button class="copy-btn" onclick="copyPrompt(0)">复制</button>
+      </div>
+      <div class="prompt-box" id="prompt-0"></div>
+      <div class="tip-box">
+        <strong>⚠️ 问题在哪：</strong>问题太模糊，AI不知道你的背景、目标、限制条件。它只能给一个泛泛的教科书式回答，实用性很低。你拿到答案后还是不知道怎么行动。
+      </div>
+    </div>
+
+    <!-- Tab 2: Expert -->
+    <div class="tab-content" id="tab-1">
+      <div class="prompt-label">
+        <span>专家版 Prompt（角色提示 + 结构化）</span>
+        <button class="copy-btn" onclick="copyPrompt(1)">复制</button>
+      </div>
+      <div class="prompt-box" id="prompt-1"></div>
+      <div class="tip-box">
+        <strong>✅ 为什么更好：</strong>明确了AI的角色身份（让它激活专业知识）、你的具体情况（个性化）、输出格式要求（结构清晰）。AI知道该说什么、不该说什么，回答的可操作性大幅提升。
+      </div>
+    </div>
+
+    <!-- Tab 3: CoT -->
+    <div class="tab-content" id="tab-2">
+      <div class="prompt-label">
+        <span>思维链版 Prompt</span>
+        <button class="copy-btn" onclick="copyPrompt(2)">复制</button>
+      </div>
+      <div class="prompt-box" id="prompt-2"></div>
+      <div class="tip-box">
+        <strong>🧠 为什么最强：</strong>强制AI在给建议前先做分析。它必须考虑你的实际情况、权衡各种因素，而不是直接套模板。这种方式特别适合复杂决策，能暴露AI思维过程中的假设，让你更好地判断建议的质量。
+      </div>
+    </div>
+  </div>
+
+  <!-- SECTION 3: COMPARISON -->
+  <div class="section-title">
+    <span class="num">3</span>
+    质量差距对比表
+  </div>
+
+  <table class="compare-table mb-2">
+    <thead>
+      <tr>
+        <th>维度</th>
+        <th>普通版</th>
+        <th>专家版</th>
+        <th>思维链版</th>
+      </tr>
+    </thead>
+    <tbody>
+      <tr>
+        <td><strong>个性化程度</strong></td>
+        <td><span class="badge badge-red">低</span><br>对所有人一样</td>
+        <td><span class="badge badge-blue">中高</span><br>根据你的情况</td>
+        <td><span class="badge badge-purple">高</span><br>深度分析你的处境</td>
+      </tr>
+      <tr>
+        <td><strong>可操作性</strong></td>
+        <td><span class="star-rating">★★☆☆☆</span><br>看完还是不知道怎么做</td>
+        <td><span class="star-rating">★★★★☆</span><br>有具体步骤</td>
+        <td><span class="star-rating">★★★★★</span><br>有分析有步骤有优先级</td>
+      </tr>
+      <tr>
+        <td><strong>回答深度</strong></td>
+        <td>表面，教科书式</td>
+        <td>较深，有专业视角</td>
+        <td>最深，暴露推理过程</td>
+      </tr>
+      <tr>
+        <td><strong>适用场景</strong></td>
+        <td>随便问问、闲聊</td>
+        <td>需要专业建议时</td>
+        <td>复杂决策、需要分析时</td>
+      </tr>
+      <tr>
+        <td><strong>写法难度</strong></td>
+        <td>1分钟</td>
+        <td>3-5分钟</td>
+        <td>5-10分钟</td>
+      </tr>
+    </tbody>
+  </table>
+
+  <!-- SECTION 4: CHECKLIST -->
+  <div class="section-title">
+    <span class="num">4</span>
+    今日任务清单（点击打勾）
+  </div>
+
+  <div class="checklist mb-2">
+    <div class="check-item" data-index="0" onclick="toggleCheck(this)">
+      <div class="check-box">✓</div>
+      <div class="check-text">
+        <strong>阅读3个核心概念</strong>：点击上方卡片，展开看懂角色提示、Few-shot、思维链
+      </div>
+    </div>
+    <div class="check-item" data-index="1" onclick="toggleCheck(this)">
+      <div class="check-box">✓</div>
+      <div class="check-text">
+        <strong>复制普通版Prompt</strong>，粘贴到Claude/ChatGPT，记录回答
+      </div>
+    </div>
+    <div class="check-item" data-index="2" onclick="toggleCheck(this)">
+      <div class="check-box">✓</div>
+      <div class="check-text">
+        <strong>复制专家版Prompt</strong>，粘贴到同一个AI，对比回答差距
+      </div>
+    </div>
+    <div class="check-item" data-index="3" onclick="toggleCheck(this)">
+      <div class="check-box">✓</div>
+      <div class="check-text">
+        <strong>复制思维链版Prompt</strong>，再对比，看看推理过程有多大差距
+      </div>
+    </div>
+    <div class="check-item" data-index="4" onclick="toggleCheck(this)">
+      <div class="check-box">✓</div>
+      <div class="check-text">
+        <strong>换一个话题自己写</strong>：选"高效学习"或"职业方向"，自己从头写三版Prompt（不看参考）
+      </div>
+    </div>
+    <div class="check-item" data-index="5" onclick="toggleCheck(this)">
+      <div class="check-box">✓</div>
+      <div class="check-text">
+        <strong>写下今天的观察</strong>：三种版本最大的差距在哪？你最意外的发现是什么？
+      </div>
+    </div>
+  </div>
+
+</div>
+
+<script>
+const topics = {
+  invest: {
+    basic: `如何开始投资？`,
+    expert: `你是一位有15年经验的个人理财顾问，专门帮助25-35岁的年轻职场人规划财务。
+
+我的情况：
+- 月收入约1.5万，每月能存3000元
+- 没有投资经验，只有银行存款
+- 风险承受能力中等（不能接受本金大幅损失）
+- 目标：5年后积累一笔钱
+
+请给我一个具体可执行的投资入门计划，包含：
+1. 第一步先做什么（本周就能行动）
+2. 推荐的投资品种及比例
+3. 新手最常犯的3个错误
+4. 用简单直白的语言，避免金融术语`,
+    cot: `我想开始投资，但完全是新手。请你帮我分析，按以下步骤思考：
+
+【我的情况】
+月收入1.5万，可投资3000元/月，零基础，中等风险承受能力
+
+【请按顺序分析】
+第一步：先评估我的财务健康状况（紧急备用金是否充足？负债情况？）
+→ 基于分析，给出"是否已准备好投资"的判断
+
+第二步：根据我的风险承受能力，分析适合我的投资品种
+→ 列出每种品种的优缺点和适合我的理由
+
+第三步：基于以上分析，制定一个12个月的行动计划
+→ 每个季度的具体目标是什么
+
+第四步：最终给出你的核心建议（不超过3条）
+→ 如果只能做一件事，是什么？
+
+请完整展示每一步的思考过程，再给出结论。`
+  },
+  learn: {
+    basic: `如何高效学习？`,
+    expert: `你是一位认知科学研究员，专注于学习方法和记忆科学，曾帮助数百名学生提升学习效率。
+
+我的情况：
+- 每天只有1-2小时的学习时间（工作日晚上）
+- 正在学习编程（Python）
+- 经常看完就忘，执行力差
+- 希望3个月内能做出一个实际项目
+
+请给我一套针对这种情况的高效学习方案，需要包含：
+1. 具体的时间分配方案（精确到每天怎么用这1-2小时）
+2. 基于科学的记忆技巧（不是鸡汤）
+3. 如何解决"看完就忘"的问题
+4. 3个月路线图`,
+    cot: `我想提升学习效率，但面临很多障碍。请按以下步骤分析：
+
+【我的处境】
+每天1-2小时，学Python，容易遗忘，执行力差，目标3个月做出项目
+
+【请按顺序思考】
+第一步：诊断问题根源
+→ "看完就忘"和"执行力差"背后的真正原因是什么？（从认知科学角度分析）
+
+第二步：评估时间资源
+→ 每天1-2小时，3个月总计约多少小时？这个时间够做什么，不够做什么？
+
+第三步：设计学习系统
+→ 基于前两步的分析，设计一个专门针对我问题的学习方法
+
+第四步：制定3个月计划
+→ 第1个月、第2个月、第3个月分别该达到什么里程碑
+
+第五步：防失败机制
+→ 预测我最可能在哪里失败，给出预防方案
+
+请完整展示推理过程。`
+  },
+  career: {
+    basic: `如何选择职业方向？`,
+    expert: `你是一位有20年经验的职业规划师，专注于帮助25-30岁的年轻人做职业转型和方向选择。
+
+我的情况：
+- 目前做运营工作，做了3年，感觉遇到瓶颈
+- 对AI/技术方向感兴趣，但没有技术背景
+- 担心转行代价太大（薪资、时间）
+- 已婚，有一定家庭压力
+
+请帮我分析：
+1. 运营背景转AI方向，现实可行路径有哪些
+2. 每条路径的真实代价（时间/金钱/风险）
+3. 如何在不辞职的情况下试探可行性
+4. 给我一个"30天探索计划"`,
+    cot: `我面临职业方向的重大选择，请帮我系统分析：
+
+【我的情况】
+运营工作3年，对AI感兴趣，无技术背景，已婚有压力，担心转行代价
+
+【请按步骤深度分析】
+第一步：评估我的核心资产
+→ 3年运营经验中，哪些能力是可迁移的？哪些是"AI时代"有价值的？
+
+第二步：分析AI行业对非技术人才的需求
+→ 真实的岗位需求是什么？不是技术岗，运营背景能去哪些方向？
+
+第三步：风险评估
+→ 转行最坏的情况是什么？概率有多大？如何对冲风险？
+
+第四步：路径对比
+→ 列出3条不同的路径，分析各自的时间、成本、成功概率
+
+第五步：给出推荐
+→ 基于以上分析，如果你是我，你会怎么选？理由是什么？
+
+请展示完整推理过程，不要跳步骤直接给结论。`
+  }
+};
+
+let currentTopic = 'invest';
+let currentTab = 0;
+
+function renderPrompts() {
+  const t = topics[currentTopic];
+  document.getElementById('prompt-0').textContent = t.basic;
+  document.getElementById('prompt-1').textContent = t.expert;
+  document.getElementById('prompt-2').textContent = t.cot;
+}
+
+function setTopic(topic) {
+  currentTopic = topic;
+  document.querySelectorAll('.topic-btn').forEach(b => b.classList.remove('active'));
+  event.target.classList.add('active');
+  renderPrompts();
+}
+
+function setTab(idx) {
+  document.querySelectorAll('.tab-btn').forEach((b, i) => b.classList.toggle('active', i === idx));
+  document.querySelectorAll('.tab-content').forEach((c, i) => c.classList.toggle('active', i === idx));
+  currentTab = idx;
+}
+
+function copyPrompt(idx) {
+  const text = document.getElementById('prompt-' + idx).textContent;
+  navigator.clipboard.writeText(text).then(() => {
+    const btn = event.target;
+    btn.textContent = '已复制！';
+    setTimeout(() => btn.textContent = '复制', 1500);
+  });
+}
+
+renderPrompts();
+
+// ── Checklist persistence via localStorage ──
+const STORAGE_KEY = 'day2-checklist';
+
+function toggleCheck(el) {
+  el.classList.toggle('done');
+  saveChecklist();
+}
+
+function saveChecklist() {
+  const states = {};
+  document.querySelectorAll('.check-item[data-index]').forEach(el => {
+    states[el.dataset.index] = el.classList.contains('done');
+  });
+  localStorage.setItem(STORAGE_KEY, JSON.stringify(states));
+}
+
+function loadChecklist() {
+  try {
+    const saved = localStorage.getItem(STORAGE_KEY);
+    if (!saved) return;
+    const states = JSON.parse(saved);
+    document.querySelectorAll('.check-item[data-index]').forEach(el => {
+      if (states[el.dataset.index]) el.classList.add('done');
+    });
+  } catch(e) {}
+}
+
+loadChecklist();
+</script>
+</body>
+</html>
